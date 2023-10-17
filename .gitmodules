@@ -16,3 +16,6 @@
 [submodule "lib/poluluBuzzer"]
 	path = lib/poluluBuzzer
 	url = https://github.com/pololu/pololu-buzzer-arduino
+[submodule "lib/PushButton"]
+	path = lib/PushButton
+	url = https://github.com/pololu/pushbutton-arduino
