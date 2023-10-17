@@ -41,11 +41,10 @@
 #include <avr/pgmspace.h>
 #include <Wire.h>
 #include <Zumo32U4.h>
-
+#include <Accelerometer.h>
 
 // Reflectance Sensor Settings
 #define NUM_SENSORS 5
-unsigned int sensor_values[NUM_SENSORS];
 // this might need to be tuned for different lighting conditions, surfaces, etc.
 #define QTR_THRESHOLD  1000 // microseconds
 
@@ -62,19 +61,44 @@ unsigned int sensor_values[NUM_SENSORS];
 #define RIGHT 1
 #define LEFT -1
 
-enum ForwardSpeed { SearchSpeed, SustainedSpeed, FullSpeed };
-ForwardSpeed _forwardSpeed;  // current forward speed setting
-unsigned long full_speed_start_time;
 #define FULL_SPEED_DURATION_LIMIT     250  // ms
 
+#define MIN_DELAY_AFTER_TURN          400  // ms = min delay before detecting contact event
+#define MIN_DELAY_BETWEEN_CONTACTS   1000  // ms = min delay between detecting new contact event
 
 const char sound_effect[] PROGMEM = "O4 T100 V10 L4 MS g12>c12>e12>G6>E12 ML>G2"; // "charge" melody
  // use V0 to suppress sound effect; v15 for max volume
 
  // Timing
-unsigned long loop_start_time;
-unsigned long last_turn_time;
-unsigned long contact_made_time;
-#define MIN_DELAY_AFTER_TURN          400  // ms = min delay before detecting contact event
-#define MIN_DELAY_BETWEEN_CONTACTS   1000  // ms = min delay between detecting new contact event
 
+class Sumo{
+
+public:
+    enum ForwardSpeed {SearchSpeed, SustainedSpeed, FullSpeed };
+    ForwardSpeed _forwardSpeed;  // current forward speed setting
+
+    unsigned long loop_start_time;
+    unsigned long full_speed_start_time;
+    unsigned long last_turn_time;
+    unsigned long contact_made_time;
+    unsigned int sensor_values[NUM_SENSORS];
+
+
+    
+    void waitForButton(boolean in_contact, Zumo32U4ButtonA button, Zumo32U4LCD display);
+    void setForwardSpeed(ForwardSpeed speed);
+    int getForwardSpeed();
+
+    // execute turn
+    // direction:  RIGHT or LEFT
+    // randomize: to improve searching
+    void turn(char direction, bool randomize, Zumo32U4Motors motors, boolean in_contact);
+    // check for contact, but ignore readings immediately after turning or losing contact
+    bool check_for_contact(Accelerometer acc);
+    // sound horn and accelerate on contact -- fight or flight
+    void on_contact_made(boolean in_contact, Zumo32U4Buzzer buzzer);
+    // reset forward speed
+    void on_contact_lost(boolean in_contact);
+    void setup();
+
+};
