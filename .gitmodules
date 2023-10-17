@@ -4,3 +4,6 @@
 [submodule "lib/fastgpio"]
 	path = lib/fastgpio
 	url = https://github.com/pololu/fastgpio-arduino
+[submodule "lib/poluluhd44780"]
+	path = lib/poluluhd44780
+	url = https://github.com/pololu/pololu-hd44780-arduino
