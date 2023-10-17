@@ -10,3 +10,6 @@
 [submodule "lib/usbpause"]
 	path = lib/usbpause
 	url = https://github.com/pololu/usb-pause-arduino
+[submodule "lib/poluluOled"]
+	path = lib/poluluOled
+	url = https://github.com/pololu/pololu-oled-arduino
