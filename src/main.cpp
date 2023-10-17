@@ -1,33 +1,17 @@
 /** This example uses the Zumo's line sensors to detect the white
 border around a sumo ring.  When the border is detected, it
 backs up and turns. */
-
 #include <Arduino.h>
-#include <Wire.h>
-#include <Zumo32U4.h>
+#include <Sumo.h>
 
-// This might need to be tuned for different lighting conditions,
-// surfaces, etc.
-#define QTR_THRESHOLD     1000  // microseconds
-
-// These might need to be tuned for different motor types.
-#define REVERSE_SPEED     200  // 0 is stopped, 400 is full speed
-#define TURN_SPEED        200
-#define FORWARD_SPEED     200
-#define REVERSE_DURATION  200  // ms
-#define TURN_DURATION     300  // ms
-
-// Change next line to this if you are using the older Zumo 32U4
-// with a black and green LCD display:
-// Zumo32U4LCD display;
-Zumo32U4OLED display;
+Zumo32U4LCD display;
 
 Zumo32U4ButtonA buttonA;
 Zumo32U4Buzzer buzzer;
 Zumo32U4Motors motors;
 Zumo32U4LineSensors lineSensors;
 
-#define NUM_SENSORS 3
+
 unsigned int lineSensorValues[NUM_SENSORS];
 
 void waitForButtonAndCountDown()
@@ -40,16 +24,6 @@ void waitForButtonAndCountDown()
 
   ledYellow(0);
   display.clear();
-
-  // Play audible countdown.
-  for (int i = 0; i < 3; i++)
-  {
-    delay(1000);
-    buzzer.playNote(NOTE_G(3), 200, 15);
-  }
-  delay(1000);
-  buzzer.playNote(NOTE_G(4), 500, 15);
-  delay(1000);
 }
 
 void setup()
