@@ -1,78 +1,197 @@
-/** This example uses the Zumo's line sensors to detect the white
-border around a sumo ring.  When the border is detected, it
-backs up and turns. */
+
 #include <Arduino.h>
 #include <Sumo.h>
+#include <Accelerometer.h>
 
 Zumo32U4LCD display;
+Zumo32U4ButtonA button;
+Zumo32U4LineSensors sensors;
 
-Zumo32U4ButtonA buttonA;
-Zumo32U4Buzzer buzzer;
+// Motor Settings
 Zumo32U4Motors motors;
-Zumo32U4LineSensors lineSensors;
 
 
-unsigned int lineSensorValues[NUM_SENSORS];
+// Sound Effects
+Zumo32U4Buzzer buzzer;
 
-void waitForButtonAndCountDown()
-{
-  ledYellow(1);
-  display.clear();
-  display.print(F("Press A"));
+Accelerometer acc;
+boolean in_contact;  // set when accelerometer detects contact with opposing robot
 
-  buttonA.waitForButton();
+void waitForButton();
+void setForwardSpeed(ForwardSpeed speed);
+int getForwardSpeed();
+// check for contact, but ignore readings immediately after turning or losing contact
+bool check_for_contact();
 
-  ledYellow(0);
-  display.clear();
-}
+// sound horn and accelerate on contact -- fight or flight
+void on_contact_made();
+
+// reset forward speed
+void on_contact_lost();
 
 void setup()
 {
+  sensors.initFiveSensors();
+
+  // Initialize the Wire library and join the I2C bus as a master
+  Wire.begin();
+
+  // Initialize accelerometer
+  acc.init();
+  acc.enableDefault();
+
+#ifdef LOG_SERIAL
+  acc.getLogHeader();
+#endif
+
+  randomSeed((unsigned int) millis());
+
   // Uncomment if necessary to correct motor directions:
   //motors.flipLeftMotor(true);
   //motors.flipRightMotor(true);
 
-  lineSensors.initThreeSensors();
-
-  waitForButtonAndCountDown();
+  ledYellow(1);
+  buzzer.playMode(PLAY_AUTOMATIC);
+  waitForButton();
 }
+
 
 void loop()
 {
-  if (buttonA.isPressed())
+  if (button.isPressed())
   {
-    // If button is pressed, stop and wait for another press to
-    // go again.
+    // if button is pressed, stop and wait for another press to go again
     motors.setSpeeds(0, 0);
-    buttonA.waitForRelease();
-    waitForButtonAndCountDown();
+    button.waitForRelease();
+    waitForButtonAndCountDown(true);
   }
 
-  lineSensors.read(lineSensorValues);
+  loop_start_time = millis();
+  acc.readAcceleration(loop_start_time);
+  sensors.read(sensor_values);
 
-  if (lineSensorValues[0] < QTR_THRESHOLD)
+  if ((_forwardSpeed == FullSpeed) && (loop_start_time - full_speed_start_time > FULL_SPEED_DURATION_LIMIT))
   {
-    // If leftmost sensor detects line, reverse and turn to the
-    // right.
-    motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
-    delay(REVERSE_DURATION);
-    motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
-    delay(TURN_DURATION);
-    motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+    setForwardSpeed(SustainedSpeed);
   }
-  else if (lineSensorValues[NUM_SENSORS - 1] < QTR_THRESHOLD)
+
+  if (sensor_values[0] < QTR_THRESHOLD)
   {
-    // If rightmost sensor detects line, reverse and turn to the
-    // left.
-    motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
-    delay(REVERSE_DURATION);
-    motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
-    delay(TURN_DURATION);
-    motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+    // if leftmost sensor detects line, reverse and turn to the right
+    turn(RIGHT, true);
   }
-  else
+  else if (sensor_values[NUM_SENSORS - 1] < QTR_THRESHOLD)
   {
-    // Otherwise, go straight.
-    motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+    // if rightmost sensor detects line, reverse and turn to the left
+    turn(LEFT, true);
   }
+  else  // otherwise, go straight
+  {
+    if (check_for_contact()) on_contact_made();
+    int speed = getForwardSpeed();
+    motors.setSpeeds(speed, speed);
+  }
+}
+
+void waitForButton()
+{
+  ledRed(0);
+
+  ledYellow(1);
+  display.clear();
+  display.print(F("Press A"));
+
+  button.waitForButton();
+
+  // reset loop variables
+  in_contact = false;  // 1 if contact made; 0 if no contact or contact lost
+  contact_made_time = 0;
+  last_turn_time = millis();  // prevents false contact detection on initial acceleration
+  _forwardSpeed = SearchSpeed;
+  full_speed_start_time = 0;
+}
+
+// execute turn
+// direction:  RIGHT or LEFT
+// randomize: to improve searching
+void turn(char direction, bool randomize)
+{
+#ifdef LOG_SERIAL
+  Serial.print("turning ...");
+  Serial.println();
+#endif
+
+  // assume contact lost
+  on_contact_lost();
+
+  static unsigned int duration_increment = TURN_DURATION / 4;
+
+  // motors.setSpeeds(0,0);
+  // delay(STOP_DURATION);
+  motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
+  delay(REVERSE_DURATION);
+  motors.setSpeeds(TURN_SPEED * direction, -TURN_SPEED * direction);
+  delay(randomize ? TURN_DURATION + (random(8) - 2) * duration_increment : TURN_DURATION);
+  int speed = getForwardSpeed();
+  motors.setSpeeds(speed, speed);
+  last_turn_time = millis();
+}
+
+void setForwardSpeed(ForwardSpeed speed)
+{
+  _forwardSpeed = speed;
+  if (speed == FullSpeed) full_speed_start_time = loop_start_time;
+}
+
+int getForwardSpeed()
+{
+  int speed;
+  switch (_forwardSpeed)
+  {
+    case FullSpeed:
+      speed = FULL_SPEED;
+      break;
+    case SustainedSpeed:
+      speed = SUSTAINED_SPEED;
+      break;
+    default:
+      speed = SEARCH_SPEED;
+      break;
+  }
+  return speed;
+}
+
+// check for contact, but ignore readings immediately after turning or losing contact
+bool check_for_contact()
+{
+  static long threshold_squared = (long) XY_ACCELERATION_THRESHOLD * (long) XY_ACCELERATION_THRESHOLD;
+  return (acc.ss_xy_avg() >  threshold_squared) && \
+    (loop_start_time - last_turn_time > MIN_DELAY_AFTER_TURN) && \
+    (loop_start_time - contact_made_time > MIN_DELAY_BETWEEN_CONTACTS);
+}
+
+// sound horn and accelerate on contact -- fight or flight
+void on_contact_made()
+{
+#ifdef LOG_SERIAL
+  Serial.print("contact made");
+  Serial.println();
+#endif
+  in_contact = true;
+  contact_made_time = loop_start_time;
+  setForwardSpeed(FullSpeed);
+  buzzer.playFromProgramSpace(sound_effect);
+  ledRed(1);
+}
+
+// reset forward speed
+void on_contact_lost()
+{
+#ifdef LOG_SERIAL
+  Serial.print("contact lost");
+  Serial.println();
+#endif
+  in_contact = false;
+  setForwardSpeed(SearchSpeed);
+  ledRed(0);
 }
