@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <Wire.h>
+#include <Zumo32U4.h>
 
 // put function declarations here:
 int myFunction(int, int);

@@ -1,3 +1,6 @@
 [submodule "lib/Zumo32U4"]
 	path = lib/Zumo32U4
 	url = https://github.com/pololu/zumo-32u4-arduino-library.git
+[submodule "lib/fastgpio"]
+	path = lib/fastgpio
+	url = https://github.com/pololu/fastgpio-arduino
