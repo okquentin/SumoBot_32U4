@@ -7,3 +7,6 @@
 [submodule "lib/poluluhd44780"]
 	path = lib/poluluhd44780
 	url = https://github.com/pololu/pololu-hd44780-arduino
+[submodule "lib/usbpause"]
+	path = lib/usbpause
+	url = https://github.com/pololu/usb-pause-arduino
