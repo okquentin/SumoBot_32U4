@@ -13,3 +13,6 @@
 [submodule "lib/poluluOled"]
 	path = lib/poluluOled
 	url = https://github.com/pololu/pololu-oled-arduino
+[submodule "lib/poluluBuzzer"]
+	path = lib/poluluBuzzer
+	url = https://github.com/pololu/pololu-buzzer-arduino
