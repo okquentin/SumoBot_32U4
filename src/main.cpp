@@ -5,33 +5,36 @@ boolean in_contact;  // set when accelerometer detects contact with opposing rob
 
 Zumo32U4LCD display;
 Zumo32U4ButtonA button;
+Zumo32U4ButtonB buttonB;
 Zumo32U4LineSensors sensors;
-// Motor Settings
 Zumo32U4Motors motors;
-// Sound Effects
 Zumo32U4Buzzer buzzer;
+
+Zumo32U4LineSensors lineSensors;
+Zumo32U4ProximitySensors proxSensors;
 
 // forward declaration
 void setForwardSpeed(ForwardSpeed speed);
 void waitForButtonAndCountDown(bool restarting);
-
 // execute turn
 // direction:  RIGHT or LEFT
 // randomize: to improve searching
 void turn(char direction, bool randomize);
-
 void setForwardSpeed(ForwardSpeed speed);
-
 int getForwardSpeed();
-
 // check for contact, but ignore readings immediately after turning or losing contact
 bool check_for_contact();
-
 // sound horn and accelerate on contact -- fight or flight
 void on_contact_made();
-
 // reset forward speed
 void on_contact_lost();
+
+
+
+uint16_t timeInThisState();
+void changeState(uint8_t newState);
+bool displayIsStale(uint16_t staleTime);
+void displayUpdated();
 
 void setup()
 {
@@ -56,8 +59,267 @@ void setup()
 
   ledYellow(1);
   buzzer.playMode(PLAY_AUTOMATIC);
+
+  lineSensors.initThreeSensors();
+  proxSensors.initThreeSensors();
+
+  changeState(StatePausing);
+  
   waitForButtonAndCountDown(false);
 }
+
+void loop()
+{
+  if (button.isPressed())
+  {
+    // if button is pressed, stop and wait for another press to go again
+    motors.setSpeeds(0, 0);
+    button.waitForRelease();
+    waitForButtonAndCountDown(true);
+  }
+
+  loop_start_time = millis();
+  acc.readAcceleration(loop_start_time);
+  sensors.read(sensor_values);
+
+  bool buttonPress = buttonB.getSingleDebouncedPress();
+
+  if (state == StatePausing)
+  {
+    // In this state, we just wait for the user to press button
+    // A, while displaying the battery voltage every 100 ms.
+
+    motors.setSpeeds(0, 0);
+
+    if (justChangedState)
+    {
+      justChangedState = false;
+      display.print(F("Press B"));
+    }
+
+    if (displayIsStale(100))
+    {
+      displayUpdated();
+      display.gotoXY(0, 1);
+      display.print(readBatteryMillivolts());
+    }
+
+    if (buttonPress)
+    {
+      // The user pressed button A, so go to the waiting state.
+      changeState(StateWaiting);
+    }
+  }
+  else if (buttonPress)
+  {
+    // The user pressed button A while the robot was running, so pause.
+    changeState(StatePausing);
+  }
+  else if (state == StateWaiting)
+  {
+    // Wait for a while and then move on to the
+    // scanning state.
+
+    motors.setSpeeds(0, 0);
+
+    uint16_t time = timeInThisState();
+
+    if (time < waitTime)
+    {
+      // Display the remaining time we have to wait.
+      uint16_t timeLeft = waitTime - time;
+      display.gotoXY(0, 0);
+      display.print(timeLeft / 1000 % 10);
+      display.print('.');
+      display.print(timeLeft / 100 % 10);
+    }
+    else
+    {
+      // We have waited long enough.  Start moving.
+      changeState(StateScanning);
+    }
+  }
+  else if (state == StateBacking)
+  {
+    // In this state, the robot drives in reverse.
+
+    if (justChangedState)
+    {
+      justChangedState = false;
+      display.print(F("back"));
+    }
+
+    motors.setSpeeds(-reverseSpeed, -reverseSpeed);
+
+    // After backing up for a specific amount of time, start
+    // scanning.
+    if (timeInThisState() >= reverseTime)
+    {
+      changeState(StateScanning);
+    }
+  }
+  else if (state == StateScanning)
+  {
+    // In this state the robot rotates in place and tries to find
+    // its opponent.
+
+    if (justChangedState)
+    {
+      justChangedState = false;
+      display.print(F("scan"));
+    }
+
+    if (scanDir == DirectionRight)
+    {
+      motors.setSpeeds(turnSpeed, -turnSpeed);
+    }
+    else
+    {
+      motors.setSpeeds(-turnSpeed, turnSpeed);
+    }
+
+    uint16_t time = timeInThisState();
+
+    if (time > scanTimeMax)
+    {
+      // We have not seen anything for a while, so start driving.
+      changeState(StateDriving);
+    }
+    else if (time > scanTimeMin)
+    {
+      // Read the proximity sensors.  If we detect anything with
+      // the front sensor, then start driving forwards.
+      proxSensors.read();
+      if (proxSensors.countsFrontWithLeftLeds() >= 2
+        || proxSensors.countsFrontWithRightLeds() >= 2)
+      {
+        changeState(StateDriving);
+      }
+    }
+  }
+  else if (state == StateDriving){
+ // In this state we drive forward while also looking for the
+    // opponent using the proximity sensors and checking for the
+    // white border.
+
+    if (justChangedState)
+    {
+      justChangedState = false;
+      display.print(F("drive"));
+    }
+
+    // Check for borders.
+    lineSensors.read(lineSensorValues);
+    if (lineSensorValues[0] < lineSensorThreshold)
+    {
+      scanDir = DirectionRight;
+      changeState(StateBacking);
+    }
+    if (lineSensorValues[2] < lineSensorThreshold)
+    {
+      scanDir = DirectionLeft;
+      changeState(StateBacking);
+    }
+
+    // Read the proximity sensors to see if know where the
+    // opponent is.
+    proxSensors.read();
+    uint8_t sum = proxSensors.countsFrontWithRightLeds() + proxSensors.countsFrontWithLeftLeds();
+    int8_t diff = proxSensors.countsFrontWithRightLeds() - proxSensors.countsFrontWithLeftLeds();
+
+    if (sum >= 4 || timeInThisState() > stalemateTime)
+    {
+      // The front sensor is getting a strong signal, or we have
+      // been driving forward for a while now without seeing the
+      // border.  Either way, there is probably a robot in front
+      // of us and we should switch to ramming speed to try to
+      // push the robot out of the ring.
+      motors.setSpeeds(rammingSpeed, rammingSpeed);
+
+      // Turn on the red LED when ramming.
+      ledRed(1);
+    }
+    else if (sum == 0)
+    {
+      // We don't see anything with the front sensor, so just
+      // keep driving forward.  Also monitor the side sensors; if
+      // they see an object then we want to go to the scanning
+      // state and turn torwards that object.
+
+      motors.setSpeeds(forwardSpeed, forwardSpeed);
+
+      if (proxSensors.countsLeftWithLeftLeds() >= 2)
+      {
+        // Detected something to the left.
+        scanDir = DirectionLeft;
+        changeState(StateScanning);
+      }
+
+      if (proxSensors.countsRightWithRightLeds() >= 2)
+      {
+        // Detected something to the right.
+        scanDir = DirectionRight;
+        changeState(StateScanning);
+      }
+
+      ledRed(0);
+    }
+    else
+    {
+      // We see something with the front sensor but it is not a
+      // strong reading.
+
+      if (diff >= 1)
+      {
+        // The right-side reading is stronger, so veer to the right.
+        motors.setSpeeds(veerSpeedHigh, veerSpeedLow);
+      }
+      else if (diff <= -1)
+      {
+        // The left-side reading is stronger, so veer to the left.
+        motors.setSpeeds(veerSpeedLow, veerSpeedHigh);
+      }
+      else
+      {
+        // Both readings are equal, so just drive forward.
+        motors.setSpeeds(forwardSpeed, forwardSpeed);
+      }
+      ledRed(0);
+    }
+  }
+
+// // Handles Driving
+//   if ((_forwardSpeed == FullSpeed) && (loop_start_time - full_speed_start_time > FULL_SPEED_DURATION_LIMIT))
+//   {
+//     setForwardSpeed(SustainedSpeed);
+//   }
+//   if (sensor_values[0] < QTR_THRESHOLD)
+//   {
+//     // if leftmost sensor detects line, reverse and turn to the right
+//     turn(RIGHT, true);
+//   }
+//   else if (sensor_values[NUM_SENSORS - 1] < QTR_THRESHOLD)
+//   {
+//     // if rightmost sensor detects line, reverse and turn to the left
+//     turn(LEFT, true);
+//   }
+//   else  // otherwise, go straight
+  // {
+  //   if (check_for_contact()) on_contact_made();
+  //   int speed = getForwardSpeed();
+  
+  //   if(millis() - displayTime >= 4000 || displayed != true){
+  //     displayed = true;
+  //     displayTime = millis();
+  //   }
+
+  //   motors.setSpeeds(speed, speed);
+  // }
+}
+
+
+
+
 
 void waitForButtonAndCountDown(bool restarting)
 {
@@ -101,50 +363,6 @@ void waitForButtonAndCountDown(bool restarting)
   last_turn_time = millis();  // prevents false contact detection on initial acceleration
   _forwardSpeed = SearchSpeed;
   full_speed_start_time = 0;
-}
-
-void loop()
-{
-  if (button.isPressed())
-  {
-    // if button is pressed, stop and wait for another press to go again
-    motors.setSpeeds(0, 0);
-    button.waitForRelease();
-    waitForButtonAndCountDown(true);
-  }
-
-  loop_start_time = millis();
-  acc.readAcceleration(loop_start_time);
-  sensors.read(sensor_values);
-
-  if ((_forwardSpeed == FullSpeed) && (loop_start_time - full_speed_start_time > FULL_SPEED_DURATION_LIMIT))
-  {
-    setForwardSpeed(SustainedSpeed);
-  }
-
-  if (sensor_values[0] < QTR_THRESHOLD)
-  {
-    // if leftmost sensor detects line, reverse and turn to the right
-    turn(RIGHT, true);
-  }
-  else if (sensor_values[NUM_SENSORS - 1] < QTR_THRESHOLD)
-  {
-    // if rightmost sensor detects line, reverse and turn to the left
-    turn(LEFT, true);
-  }
-  else  // otherwise, go straight
-  {
-    if (check_for_contact()) on_contact_made();
-    int speed = getForwardSpeed();
-  
-    if(millis() - displayTime >= 4000 || displayed != true){
-      display.print(speed);
-      display.print(" RPM");
-      displayed = true;
-      displayTime = millis();
-    }
-    motors.setSpeeds(speed, speed);
-  }
 }
 
 void turn(char direction, bool randomize)
@@ -228,6 +446,50 @@ void on_contact_lost()
   setForwardSpeed(SearchSpeed);
   ledRed(0);
 }
+
+
+// Gets the amount of time we have been in this state, in
+// milliseconds.  After 65535 milliseconds (65 seconds), this
+// overflows to 0.
+uint16_t timeInThisState()
+{
+  return (uint16_t)(millis() - stateStartTime);
+}
+
+// Changes to a new state.  It also clears the display and turns off
+// the LEDs so that the things the previous state were doing do
+// not affect the feedback the user sees in the new state.
+void changeState(uint8_t newState)
+{
+  state = (State)newState;
+  justChangedState = true;
+  stateStartTime = millis();
+  ledRed(0);
+  ledYellow(0);
+  ledGreen(0);
+  display.clear();
+  displayCleared = true;
+}
+
+// Returns true if the display has been cleared or the contents
+// on it have not been updated in a while.  The time limit used
+// to decide if the contents are staled is specified in
+// milliseconds by the staleTime parameter.
+bool displayIsStale(uint16_t staleTime)
+{
+  return displayCleared || (millis() - displayTime) > staleTime;
+}
+
+// Any part of the code that uses displayIsStale to decide when
+// to update the display should call this function when it updates the
+// display.
+void displayUpdated()
+{
+  displayTime = millis();
+  displayCleared = false;
+}
+
+
 
 
 

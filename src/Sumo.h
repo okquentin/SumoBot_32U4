@@ -74,8 +74,114 @@ const char sound_effect[] PROGMEM = "O4 T100 V4 L15 MS d4>c2"; // "charge" melod
 unsigned long loop_start_time;
 unsigned long last_turn_time;
 unsigned long contact_made_time;
-unsigned long displayTime;
 bool displayed;
 
 #define MIN_DELAY_AFTER_TURN          400  // ms = min delay before detecting contact event
 #define MIN_DELAY_BETWEEN_CONTACTS   1000  // ms = min delay between detecting new contact event
+
+/* This example shows how you might use the Zumo 32U4 in a robot
+sumo competition.
+
+It uses the line sensors to detect the white border of the sumo
+ring so it can avoid driving out of the ring (similar to the
+BorderDetect example).  It also uses the Zumo 32U4's proximity
+sensors to scan for nearby opponents and drive towards them.
+
+For this code to work, jumpers on the front sensor array
+must be installed in order to connect pin 4 to RGT and connect
+pin 20 to LFT.
+
+This code was tested on a Zumo 32U4 with 75:1 HP micro metal
+gearmotors. */
+
+
+unsigned int lineSensorValues[3];
+
+// When the reading on a line sensor goes below this value, we
+// consider that line sensor to have detected the white border at
+// the edge of the ring.  This value might need to be tuned for
+// different lighting conditions, surfaces, etc.
+const uint16_t lineSensorThreshold = 1000;
+
+// The speed that the robot uses when backing up.
+const uint16_t reverseSpeed = 200;
+
+// The speed that the robot uses when turning.
+const uint16_t turnSpeed = 200;
+
+// The speed that the robot usually uses when moving forward.
+// You don't want this to be too fast because then the robot
+// might fail to stop when it detects the white border.
+const uint16_t forwardSpeed = 200;
+
+// These two variables specify the speeds to apply to the motors
+// when veering left or veering right.  While the robot is
+// driving forward, it uses its proximity sensors to scan for
+// objects ahead of it and tries to veer towards them.
+const uint16_t veerSpeedLow = 0;
+const uint16_t veerSpeedHigh = 250;
+
+// The speed that the robot drives when it detects an opponent in
+// front of it, either with the proximity sensors or by noticing
+// that it is caught in a stalemate (driving forward for several
+// seconds without reaching a border).  400 is full speed.
+const uint16_t rammingSpeed = 400;
+
+// The amount of time to spend backing up after detecting a
+// border, in milliseconds.
+const uint16_t reverseTime = 200;
+
+// The minimum amount of time to spend scanning for nearby
+// opponents, in milliseconds.
+const uint16_t scanTimeMin = 200;
+
+// The maximum amount of time to spend scanning for nearby
+// opponents, in milliseconds.
+const uint16_t scanTimeMax = 2100;
+
+// The amount of time to wait between detecting a button press
+// and actually starting to move, in milliseconds.  Typical robot
+// sumo rules require 5 seconds of waiting.
+const uint16_t waitTime = 5000;
+
+// If the robot has been driving forward for this amount of time,
+// in milliseconds, without reaching a border, the robot decides
+// that it must be pushing on another robot and this is a
+// stalemate, so it increases its motor speed.
+const uint16_t stalemateTime = 4000;
+
+// This enum lists the top-level states that the robot can be in.
+enum State
+{
+  StatePausing,
+  StateWaiting,
+  StateScanning,
+  StateDriving,
+  StateBacking,
+};
+
+State state = StatePausing;
+
+enum Direction
+{
+  DirectionLeft,
+  DirectionRight,
+};
+
+// scanDir is the direction the robot should turn the next time
+// it scans for an opponent.
+Direction scanDir = DirectionLeft;
+
+// The time, in milliseconds, that we entered the current top-level state.
+uint16_t stateStartTime;
+
+// The time, in milliseconds, that the display was last updated.
+uint16_t displayTime;
+
+// This gets set to true whenever we change to a new state.
+// A state can read and write this variable this in order to
+// perform actions just once at the beginning of the state.
+bool justChangedState;
+
+// This gets set whenever we clear the display.
+bool displayCleared;
