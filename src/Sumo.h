@@ -153,14 +153,12 @@ const uint16_t stalemateTime = 4000;
 // This enum lists the top-level states that the robot can be in.
 enum State
 {
-  StatePausing,
-  StateWaiting,
   StateScanning,
   StateDriving,
   StateBacking,
 };
 
-State state = StatePausing;
+State state = StateScanning;
 
 enum Direction
 {

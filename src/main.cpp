@@ -5,7 +5,6 @@ boolean in_contact;  // set when accelerometer detects contact with opposing rob
 
 Zumo32U4LCD display;
 Zumo32U4ButtonA button;
-Zumo32U4ButtonB buttonB;
 Zumo32U4LineSensors sensors;
 Zumo32U4Motors motors;
 Zumo32U4Buzzer buzzer;
@@ -63,7 +62,7 @@ void setup()
   lineSensors.initThreeSensors();
   proxSensors.initThreeSensors();
 
-  changeState(StatePausing);
+  changeState(StateScanning);
   
   waitForButtonAndCountDown(false);
 }
@@ -82,83 +81,7 @@ void loop()
   acc.readAcceleration(loop_start_time);
   sensors.read(sensor_values);
 
-  bool buttonPress = buttonB.getSingleDebouncedPress();
-
-  if (state == StatePausing)
-  {
-    // In this state, we just wait for the user to press button
-    // A, while displaying the battery voltage every 100 ms.
-
-    motors.setSpeeds(0, 0);
-
-    if (justChangedState)
-    {
-      justChangedState = false;
-      display.print(F("Press B"));
-    }
-
-    if (displayIsStale(100))
-    {
-      displayUpdated();
-      display.gotoXY(0, 1);
-      display.print(readBatteryMillivolts());
-    }
-
-    if (buttonPress)
-    {
-      // The user pressed button A, so go to the waiting state.
-      changeState(StateWaiting);
-    }
-  }
-  else if (buttonPress)
-  {
-    // The user pressed button A while the robot was running, so pause.
-    changeState(StatePausing);
-  }
-  else if (state == StateWaiting)
-  {
-    // Wait for a while and then move on to the
-    // scanning state.
-
-    motors.setSpeeds(0, 0);
-
-    uint16_t time = timeInThisState();
-
-    if (time < waitTime)
-    {
-      // Display the remaining time we have to wait.
-      uint16_t timeLeft = waitTime - time;
-      display.gotoXY(0, 0);
-      display.print(timeLeft / 1000 % 10);
-      display.print('.');
-      display.print(timeLeft / 100 % 10);
-    }
-    else
-    {
-      // We have waited long enough.  Start moving.
-      changeState(StateScanning);
-    }
-  }
-  else if (state == StateBacking)
-  {
-    // In this state, the robot drives in reverse.
-
-    if (justChangedState)
-    {
-      justChangedState = false;
-      display.print(F("back"));
-    }
-
-    motors.setSpeeds(-reverseSpeed, -reverseSpeed);
-
-    // After backing up for a specific amount of time, start
-    // scanning.
-    if (timeInThisState() >= reverseTime)
-    {
-      changeState(StateScanning);
-    }
-  }
-  else if (state == StateScanning)
+  if (state == StateScanning)
   {
     // In this state the robot rotates in place and tries to find
     // its opponent.
@@ -197,35 +120,43 @@ void loop()
       }
     }
   }
+ 
   else if (state == StateDriving){
  // In this state we drive forward while also looking for the
     // opponent using the proximity sensors and checking for the
     // white border.
 
     if (justChangedState)
-    {
+    { 
       justChangedState = false;
       display.print(F("drive"));
     }
 
     // Check for borders.
-    lineSensors.read(lineSensorValues);
-    if (lineSensorValues[0] < lineSensorThreshold)
+// Handles Driving
+    if ((_forwardSpeed == FullSpeed) && (loop_start_time - full_speed_start_time > FULL_SPEED_DURATION_LIMIT))
     {
-      scanDir = DirectionRight;
-      changeState(StateBacking);
+      setForwardSpeed(SustainedSpeed);
     }
-    if (lineSensorValues[2] < lineSensorThreshold)
+    if (sensor_values[0] < QTR_THRESHOLD)
     {
-      scanDir = DirectionLeft;
-      changeState(StateBacking);
+      // if leftmost sensor detects line, reverse and turn to the right
+      turn(RIGHT, true);
     }
+    else if (sensor_values[NUM_SENSORS - 1] < QTR_THRESHOLD)
+  {
+    // if rightmost sensor detects line, reverse and turn to the left
+    turn(LEFT, true);
+  }
 
     // Read the proximity sensors to see if know where the
     // opponent is.
     proxSensors.read();
     uint8_t sum = proxSensors.countsFrontWithRightLeds() + proxSensors.countsFrontWithLeftLeds();
     int8_t diff = proxSensors.countsFrontWithRightLeds() - proxSensors.countsFrontWithLeftLeds();
+
+    if (check_for_contact()) on_contact_made();
+    // int speed = getForwardSpeed();
 
     if (sum >= 4 || timeInThisState() > stalemateTime)
     {
@@ -261,7 +192,6 @@ void loop()
         scanDir = DirectionRight;
         changeState(StateScanning);
       }
-
       ledRed(0);
     }
     else
@@ -288,32 +218,26 @@ void loop()
     }
   }
 
-// // Handles Driving
-//   if ((_forwardSpeed == FullSpeed) && (loop_start_time - full_speed_start_time > FULL_SPEED_DURATION_LIMIT))
-//   {
-//     setForwardSpeed(SustainedSpeed);
-//   }
-//   if (sensor_values[0] < QTR_THRESHOLD)
-//   {
-//     // if leftmost sensor detects line, reverse and turn to the right
-//     turn(RIGHT, true);
-//   }
-//   else if (sensor_values[NUM_SENSORS - 1] < QTR_THRESHOLD)
-//   {
-//     // if rightmost sensor detects line, reverse and turn to the left
-//     turn(LEFT, true);
-//   }
-//   else  // otherwise, go straight
-  // {
-  //   if (check_for_contact()) on_contact_made();
-  //   int speed = getForwardSpeed();
-  
-  //   if(millis() - displayTime >= 4000 || displayed != true){
-  //     displayed = true;
-  //     displayTime = millis();
-  //   }
+  else if (state == StateBacking)
+  {
+    // In this state, the robot drives in reverse.
 
-  //   motors.setSpeeds(speed, speed);
+    if (justChangedState)
+    {
+      justChangedState = false;
+      display.print(F("back"));
+    }
+
+    motors.setSpeeds(-reverseSpeed, -reverseSpeed);
+
+    // After backing up for a specific amount of time, start
+    // scanning.
+    if (timeInThisState() >= reverseTime)
+    {
+      changeState(StateScanning);
+    }
+  }
+
   // }
 }
 
