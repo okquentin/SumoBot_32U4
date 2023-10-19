@@ -80,16 +80,20 @@ void waitForButtonAndCountDown(bool restarting)
   display.clear();
 
   // play audible countdown
-  for (int i = 3; i > 0; i--)
+  for (int i = 5; i > 0; i--)
   {
-    display.print("Count Down: " );
+    display.clear();
+    display.print("Count: " );
+    display.print(i);
     delay(1000);
     buzzer.playNote(NOTE_G(3), 50, 12);
-    display.print(i);
+    display.clear();
   }
   delay(1000);
   buzzer.playFromProgramSpace(sound_effect);
+  display.print("Tachiai!" );
   delay(1000);
+  display.clear();
 
   // reset loop variables
   in_contact = false;  // 1 if contact made; 0 if no contact or contact lost
