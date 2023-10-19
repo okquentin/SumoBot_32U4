@@ -132,8 +132,7 @@ void loop()
       display.print(F("drive"));
     }
 
-    // Check for borders.
-// Handles Driving
+    // Check for borders and drives
     if ((_forwardSpeed == FullSpeed) && (loop_start_time - full_speed_start_time > FULL_SPEED_DURATION_LIMIT))
     {
       setForwardSpeed(SustainedSpeed);
@@ -144,10 +143,10 @@ void loop()
       turn(RIGHT, true);
     }
     else if (sensor_values[NUM_SENSORS - 1] < QTR_THRESHOLD)
-  {
+    {
     // if rightmost sensor detects line, reverse and turn to the left
     turn(LEFT, true);
-  }
+    }
 
     // Read the proximity sensors to see if know where the
     // opponent is.
@@ -157,20 +156,8 @@ void loop()
 
     if (check_for_contact()) on_contact_made();
     // int speed = getForwardSpeed();
-
-    if (sum >= 4 || timeInThisState() > stalemateTime)
-    {
-      // The front sensor is getting a strong signal, or we have
-      // been driving forward for a while now without seeing the
-      // border.  Either way, there is probably a robot in front
-      // of us and we should switch to ramming speed to try to
-      // push the robot out of the ring.
-      motors.setSpeeds(rammingSpeed, rammingSpeed);
-
-      // Turn on the red LED when ramming.
-      ledRed(1);
-    }
-    else if (sum == 0)
+    
+    if (sum == 0)
     {
       // We don't see anything with the front sensor, so just
       // keep driving forward.  Also monitor the side sensors; if
