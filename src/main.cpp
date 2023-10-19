@@ -72,7 +72,9 @@ void waitForButtonAndCountDown(bool restarting)
 
   ledYellow(1);
   display.clear();
-  display.print(F("Press A"));
+  display.print(F("PRESS A"));
+  display.setCursor(0,1); //sets cursor to second line first row
+  display.print(F("TO BEGIN"));
 
   button.waitForButton();
 
@@ -82,18 +84,18 @@ void waitForButtonAndCountDown(bool restarting)
   // play audible countdown
   for (int i = 5; i > 0; i--)
   {
+    buzzer.playNote(NOTE_G(3), 50, 12);
     display.clear();
     display.print("Count: " );
     display.print(i);
     delay(1000);
-    buzzer.playNote(NOTE_G(3), 50, 12);
-    display.clear();
   }
-  delay(1000);
-  buzzer.playFromProgramSpace(sound_effect);
+  display.clear();
+  buzzer.playNote(NOTE_D(4), 80, 15);
   display.print("Tachiai!" );
   delay(1000);
   display.clear();
+  display.print("Driving");
 
   // reset loop variables
   in_contact = false;  // 1 if contact made; 0 if no contact or contact lost
@@ -111,6 +113,7 @@ void loop()
     motors.setSpeeds(0, 0);
     button.waitForRelease();
     waitForButtonAndCountDown(true);
+    display.print("Driving");
   }
 
   loop_start_time = millis();
@@ -134,15 +137,16 @@ void loop()
   }
   else  // otherwise, go straight
   {
-    if (check_for_contact()) on_contact_made();
     int speed = getForwardSpeed();
-  
-    if(millis() - displayTime >= 4000 || displayed != true){
-      display.print(speed);
-      display.print(" RPM");
-      displayed = true;
-      displayTime = millis();
+
+    if (check_for_contact()) on_contact_made();
+    
+    if(millis() - contactTime >= 4000 && displayed != true){
+     display.clear();
+     display.print("Driving");
+     displayed = true;
     }
+
     motors.setSpeeds(speed, speed);
   }
 }
@@ -213,9 +217,11 @@ void on_contact_made()
   setForwardSpeed(FullSpeed);
   buzzer.playFromProgramSpace(sound_effect);
   ledRed(1);
-  display.setCursor(0,1) ; //sets cursor to second line first row
-  display.print(F("Contact!"));
-  displayTime+= 4000;
+  display.clear();
+  display.print(F("CONTACT!"));
+  contactTime+= 4000;
+  displayed = false;
+  buzzer.playNote(NOTE_D(4), 30, 15);
 }
 
 void on_contact_lost()

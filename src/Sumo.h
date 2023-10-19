@@ -67,7 +67,7 @@ unsigned long full_speed_start_time;
 #define FULL_SPEED_DURATION_LIMIT     250  // ms
 
 
-const char sound_effect[] PROGMEM = "O4 T100 V4 L15 MS d4>c2"; // "charge" melody
+const char sound_effect[] PROGMEM = "01 T120 V15 L8 b# b#"; // beep beep sound
  // use V0 to suppress sound effect; v15 for max volume
 
  // Timing
@@ -75,6 +75,7 @@ unsigned long loop_start_time;
 unsigned long last_turn_time;
 unsigned long contact_made_time;
 unsigned long displayTime;
+unsigned long contactTime;
 bool displayed;
 
 #define MIN_DELAY_AFTER_TURN          400  // ms = min delay before detecting contact event
