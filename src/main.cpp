@@ -80,12 +80,12 @@ void waitForButtonAndCountDown(bool restarting)
   display.clear();
 
   // play audible countdown
-  for (int i = 0; i < 3; i++)
+  for (int i = 3; i > 0; i--)
   {
-    display.print("Counting Down: " );
-    display.print(i);
+    display.print("Count Down: " );
     delay(1000);
     buzzer.playNote(NOTE_G(3), 50, 12);
+    display.print(i);
   }
   delay(1000);
   buzzer.playFromProgramSpace(sound_effect);
