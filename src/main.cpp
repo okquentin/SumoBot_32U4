@@ -13,7 +13,7 @@ Zumo32U4Buzzer buzzer;
 
 // forward declaration
 void setForwardSpeed(ForwardSpeed speed);
-void waitForButton();
+void waitForButtonAndCountDown(bool restarting);
 
 // execute turn
 // direction:  RIGHT or LEFT
@@ -56,11 +56,17 @@ void setup()
 
   ledYellow(1);
   buzzer.playMode(PLAY_AUTOMATIC);
-  waitForButton();
+  waitForButtonAndCountDown(false);
 }
 
-void waitForButton()
+void waitForButtonAndCountDown(bool restarting)
 {
+#ifdef LOG_SERIAL
+  Serial.print(restarting ? "Restarting Countdown" : "Starting Countdown");
+  Serial.println();
+#else
+  (void)restarting; // suppress unused variable warning
+#endif
 
   ledRed(0);
 
@@ -72,6 +78,18 @@ void waitForButton()
 
   ledYellow(0);
   display.clear();
+
+  // play audible countdown
+  for (int i = 0; i < 3; i++)
+  {
+    display.print("Counting Down: " );
+    display.print(i);
+    delay(1000);
+    buzzer.playNote(NOTE_G(3), 50, 12);
+  }
+  delay(1000);
+  buzzer.playFromProgramSpace(sound_effect);
+  delay(1000);
 
   // reset loop variables
   in_contact = false;  // 1 if contact made; 0 if no contact or contact lost
@@ -88,7 +106,7 @@ void loop()
     // if button is pressed, stop and wait for another press to go again
     motors.setSpeeds(0, 0);
     button.waitForRelease();
-    waitForButton();
+    waitForButtonAndCountDown(true);
   }
 
   loop_start_time = millis();
