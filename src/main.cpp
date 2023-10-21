@@ -93,9 +93,7 @@ void waitForButtonAndCountDown(bool restarting)
   display.clear();
   buzzer.playNote(NOTE_D(4), 80, 15);
   display.print("Tachiai!" );
-  delay(1000);
-  display.clear();
-  display.print("Driving");
+
 
   // reset loop variables
   in_contact = false;  // 1 if contact made; 0 if no contact or contact lost
