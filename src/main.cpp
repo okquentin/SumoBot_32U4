@@ -33,6 +33,8 @@ void on_contact_made();
 // reset forward speed
 void on_contact_lost();
 
+// #define LOG_SERIAL
+
 void setup()
 {
   sensors.initFiveSensors();
@@ -125,13 +127,23 @@ void loop()
 
   if (sensor_values[0] < QTR_THRESHOLD)
   {
+    #ifdef LOG_SERIAL
+    Serial.print("Left Sensor Line Detected");
+    Serial.println();
+    #else
     // if leftmost sensor detects line, reverse and turn to the right
     turn(RIGHT, true);
+    #endif
   }
   else if (sensor_values[NUM_SENSORS - 1] < QTR_THRESHOLD)
   {
+    #ifdef LOG_SERIAL
+    Serial.print("Right Sensor Line Detected");
+    Serial.println();
+    #else
     // if rightmost sensor detects line, reverse and turn to the left
     turn(LEFT, true);
+    #endif
   }
   else  // otherwise, go straight
   {
@@ -216,10 +228,9 @@ void on_contact_made()
   buzzer.playFromProgramSpace(sound_effect);
   ledRed(1);
   display.clear();
-  display.print(F("CONTACT!"));
-  contactTime+= 4000;
-  displayed = false;
   buzzer.playNote(NOTE_D(4), 30, 15);
+  display.print("CONTACT");
+  contactTime += 4000;
 }
 
 void on_contact_lost()

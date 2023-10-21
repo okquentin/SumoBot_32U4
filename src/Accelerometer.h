@@ -8,7 +8,7 @@
 // Accelerometer Settings
 #define RA_SIZE 3  // number of readings to include in running average of accelerometer readings
 // #define XY_ACCELERATION_THRESHOLD 2400  // for detection of contact (~16000 = magnitude of acceleration due to gravity)
-#define XY_ACCELERATION_THRESHOLD 2000 // for detection of contact (~16000 = magnitude of acceleration due to gravity)
+#define XY_ACCELERATION_THRESHOLD 2200 // for detection of contact (~16000 = magnitude of acceleration due to gravity)
 class Accelerometer : public Zumo32U4IMU
 {
   typedef struct acc_data_xy

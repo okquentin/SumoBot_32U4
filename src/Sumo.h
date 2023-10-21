@@ -46,7 +46,7 @@
 #define NUM_SENSORS 5
 unsigned int sensor_values[NUM_SENSORS];
 // this might need to be tuned for different lighting conditions, surfaces, etc.
-#define QTR_THRESHOLD  1000 // microseconds
+#define QTR_THRESHOLD  300 // microseconds
 
 // these might need to be tuned for different motor types
 #define REVERSE_SPEED     200 // 0 is stopped, 400 is full speed
