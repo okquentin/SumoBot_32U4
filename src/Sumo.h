@@ -46,7 +46,7 @@
 #define NUM_SENSORS 5
 unsigned int sensor_values[NUM_SENSORS];
 // this might need to be tuned for different lighting conditions, surfaces, etc.
-#define QTR_THRESHOLD  300 // microseconds
+#define QTR_THRESHOLD  250 // microseconds
 
 // these might need to be tuned for different motor types
 #define REVERSE_SPEED     200 // 0 is stopped, 400 is full speed
@@ -64,8 +64,7 @@ unsigned int sensor_values[NUM_SENSORS];
 enum ForwardSpeed { SearchSpeed, SustainedSpeed, FullSpeed };
 ForwardSpeed _forwardSpeed;  // current forward speed setting
 unsigned long full_speed_start_time;
-#define FULL_SPEED_DURATION_LIMIT     250  // ms
-
+#define FULL_SPEED_DURATION_LIMIT 250  // ms
 
 const char sound_effect[] PROGMEM = "01 T120 V15 L8 b# b#"; // beep beep sound
  // use V0 to suppress sound effect; v15 for max volume
@@ -78,5 +77,5 @@ unsigned long displayTime;
 unsigned long contactTime;
 bool displayed;
 
-#define MIN_DELAY_AFTER_TURN          400  // ms = min delay before detecting contact event
+#define MIN_DELAY_AFTER_TURN         400  // ms = min delay before detecting contact event
 #define MIN_DELAY_BETWEEN_CONTACTS   1000  // ms = min delay between detecting new contact event
