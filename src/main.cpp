@@ -36,8 +36,7 @@ void on_contact_lost();
 
 // #define LOG_SERIAL
 
-void setup()
-{
+void setup() {
   sensors.initFiveSensors();
 
   // Initialize the Wire library and join the I2C bus as a master
@@ -62,8 +61,7 @@ void setup()
   waitForButtonAndCountDown(false);
 }
 
-void waitForButtonAndCountDown(bool restarting)
-{
+void waitForButtonAndCountDown(bool restarting) {
 #ifdef LOG_SERIAL
   Serial.print(restarting ? "Restarting Countdown" : "Starting Countdown");
   Serial.println();
@@ -106,8 +104,7 @@ void waitForButtonAndCountDown(bool restarting)
   full_speed_start_time = 0;
 }
 
-void loop()
-{
+void loop() {
   if (button.isPressed()) {
     // if button is pressed, stop and wait for another press to go again
     motors.setSpeeds(0, 0);
@@ -145,10 +142,12 @@ void loop()
   else {  // otherwise, go straight
     int speed = getForwardSpeed();
 
-    if (check_for_contact()) 
+    // when the robot makes contact with another robot
+    if (check_for_contact()) {
       on_contact_made();
+    }
     
-    // if the contact time is 
+    // if the contact time is greater than 4 seconds
     if(millis() - contactTime >= 4000 && displayed != true){
      display.clear();
      display.print("Driving");
@@ -159,8 +158,7 @@ void loop()
   }
 }
 
-void turn(char direction, bool randomize)
-{
+void turn(char direction, bool randomize) {
 #ifdef LOG_SERIAL
   Serial.print("turning ...");
   Serial.println();
@@ -182,14 +180,12 @@ void turn(char direction, bool randomize)
   last_turn_time = millis();
 }
 
-void setForwardSpeed(ForwardSpeed speed)
-{
+void setForwardSpeed(ForwardSpeed speed) {
   _forwardSpeed = speed;
   if (speed == FullSpeed) full_speed_start_time = loop_start_time;
 }
 
-int getForwardSpeed()
-{
+int getForwardSpeed() {
   int speed;
   switch (_forwardSpeed)
   {
@@ -206,16 +202,14 @@ int getForwardSpeed()
   return speed;
 }
 
-bool check_for_contact()
-{
+bool check_for_contact() {
   static long threshold_squared = (long) XY_ACCELERATION_THRESHOLD * (long) XY_ACCELERATION_THRESHOLD;
   return (acc.ss_xy_avg() >  threshold_squared) && \
     (loop_start_time - last_turn_time > MIN_DELAY_AFTER_TURN) && \
     (loop_start_time - contact_made_time > MIN_DELAY_BETWEEN_CONTACTS);
 }
 
-void on_contact_made()
-{
+void on_contact_made() {
 #ifdef LOG_SERIAL
   Serial.print("contact made");
   Serial.println();
@@ -231,8 +225,7 @@ void on_contact_made()
   contactTime += 4000;
 }
 
-void on_contact_lost()
-{
+void on_contact_lost() {
 #ifdef LOG_SERIAL
   Serial.print("contact lost");
   Serial.println();
