@@ -74,7 +74,7 @@ void waitForButtonAndCountDown(bool restarting) {
   ledYellow(1);
   display.clear();
   display.print(F("PRESS A"));
-  display.setCursor(0,1); //sets cursor to second line first row
+  display.gotoXY(0,1); //sets cursor to second line first row
   display.print(F("TO BEGIN"));
 
   button.waitForButton();
