@@ -1,3 +1,6 @@
+#ifndef _SUMO_H_
+#define _SUMO_H_
+#pragma once
 /* This example uses the Zumo 32U4's onboard accelerometer to detect contact with an adversary robot
  * in the sumo ring.
  *
@@ -54,6 +57,7 @@ unsigned int sensor_values[NUM_SENSORS];
 #define SEARCH_SPEED      200
 #define SUSTAINED_SPEED   400 // switches to SUSTAINED_SPEED from FULL_SPEED after FULL_SPEED_DURATION_LIMIT ms
 #define FULL_SPEED        400
+#define PULSE_SPEED       350
 #define STOP_DURATION     100 // ms
 #define REVERSE_DURATION  200 // ms
 #define TURN_DURATION     300 // ms
@@ -62,7 +66,7 @@ unsigned int sensor_values[NUM_SENSORS];
 #define LEFT -1
 
 enum ForwardSpeed { SearchSpeed, SustainedSpeed, FullSpeed };
-ForwardSpeed _forwardSpeed;  // current forward speed setting
+extern ForwardSpeed _forwardSpeed;  // current forward speed setting
 unsigned long full_speed_start_time;
 #define FULL_SPEED_DURATION_LIMIT 250  // ms
 
@@ -79,3 +83,35 @@ bool displayed;
 
 #define MIN_DELAY_AFTER_TURN         400  // ms = min delay before detecting contact event
 #define MIN_DELAY_BETWEEN_CONTACTS   1000  // ms = min delay between detecting new contact event
+
+#define PULSE_TIME 250 // ms
+
+extern Accelerometer acc;
+extern boolean in_contact;  // set when accelerometer detects contact with opposing robot
+
+// Zumo32U4LCD display;
+extern Zumo32U4OLED display;
+extern Zumo32U4ButtonA button;
+extern Zumo32U4LineSensors sensors;
+// Motor Settings
+extern Zumo32U4Motors motors;
+// Sound Effects
+extern Zumo32U4Buzzer buzzer;
+
+// forward declaration
+void setForwardSpeed(ForwardSpeed speed);
+void waitForButtonAndCountDown(bool restarting);
+// execute turn
+// direction:  RIGHT or LEFT
+// randomize: to improve searching
+void turn(char direction, bool randomize);
+void setForwardSpeed(ForwardSpeed speed);
+int getForwardSpeed();
+// check for contact, but ignore readings immediately after turning or losing contact
+bool check_for_contact();
+// sound horn and accelerate on contact -- fight or flight
+void on_contact_made();
+// reset forward speed
+void on_contact_lost();
+
+#endif
