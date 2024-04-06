@@ -100,7 +100,7 @@ void waitForButtonAndCountDown(bool restarting) {
   in_contact = false;  // 1 if contact made; 0 if no contact or contact lost
   contact_made_time = 0;
   last_turn_time = millis();  // prevents false contact detection on initial acceleration
-  _forwardSpeed = SearchSpeed;
+  _forwardSpeed = SustainedSpeed;
   full_speed_start_time = 0;
 }
 
@@ -231,7 +231,7 @@ void on_contact_lost() {
   Serial.println();
 #endif
   in_contact = false;
-  setForwardSpeed(SearchSpeed);
+  setForwardSpeed(SustainedSpeed);
   ledRed(0);
 }
 
