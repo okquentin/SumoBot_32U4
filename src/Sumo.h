@@ -47,7 +47,7 @@
 
 // Reflectance Sensor Settings
 #define NUM_SENSORS 5
-unsigned int sensor_values[NUM_SENSORS];
+extern unsigned int sensor_values[NUM_SENSORS];
 // this might need to be tuned for different lighting conditions, surfaces, etc.
 #define QTR_THRESHOLD  250 // microseconds
 
@@ -67,19 +67,19 @@ unsigned int sensor_values[NUM_SENSORS];
 
 enum ForwardSpeed { SearchSpeed, SustainedSpeed, FullSpeed };
 extern ForwardSpeed _forwardSpeed;  // current forward speed setting
-unsigned long full_speed_start_time;
 #define FULL_SPEED_DURATION_LIMIT 250  // ms
 
 const char sound_effect[] PROGMEM = "01 T120 V15 L8 b# b#"; // beep beep sound
  // use V0 to suppress sound effect; v15 for max volume
 
  // Timing
-unsigned long loop_start_time;
-unsigned long last_turn_time;
-unsigned long contact_made_time;
-unsigned long displayTime;
-unsigned long contactTime;
-bool displayed;
+extern unsigned long full_speed_start_time;
+extern unsigned long loop_start_time;
+extern unsigned long last_turn_time;
+extern unsigned long contact_made_time;
+extern unsigned long displayTime;
+extern unsigned long contactTime;
+extern bool displayed;
 
 #define MIN_DELAY_AFTER_TURN         400  // ms = min delay before detecting contact event
 #define MIN_DELAY_BETWEEN_CONTACTS   1000  // ms = min delay between detecting new contact event

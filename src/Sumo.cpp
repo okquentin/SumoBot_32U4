@@ -1,5 +1,21 @@
-
 #include "Sumo.h"
+
+unsigned int sensor_values[NUM_SENSORS];
+Zumo32U4LineSensors sensors;
+Accelerometer acc;
+Zumo32U4ButtonA button;
+Zumo32U4OLED display;
+Zumo32U4Motors motors;
+Zumo32U4Buzzer buzzer;
+bool in_contact;
+unsigned long loop_start_time;
+unsigned long contactTime;
+bool displayed;
+unsigned long displayTime;
+unsigned long contact_made_time;
+unsigned long last_turn_time;
+unsigned long full_speed_start_time;
+ForwardSpeed _forwardSpeed;
 
 void turn(char direction, bool randomize) {
 #ifdef LOG_SERIAL
