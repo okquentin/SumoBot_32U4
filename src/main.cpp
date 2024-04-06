@@ -3,7 +3,8 @@
 Accelerometer acc;
 boolean in_contact;  // set when accelerometer detects contact with opposing robot
 
-Zumo32U4LCD display;
+// Zumo32U4LCD display;
+Zumo32U4OLED display;
 Zumo32U4ButtonA button;
 Zumo32U4LineSensors sensors;
 // Motor Settings
@@ -107,8 +108,7 @@ void waitForButtonAndCountDown(bool restarting)
 
 void loop()
 {
-  if (button.isPressed())
-  {
+  if (button.isPressed()) {
     // if button is pressed, stop and wait for another press to go again
     motors.setSpeeds(0, 0);
     button.waitForRelease();
@@ -120,13 +120,11 @@ void loop()
   acc.readAcceleration(loop_start_time);
   sensors.read(sensor_values);
 
-  if ((_forwardSpeed == FullSpeed) && (loop_start_time - full_speed_start_time > FULL_SPEED_DURATION_LIMIT))
-  {
+  if ((_forwardSpeed == FullSpeed) && (loop_start_time - full_speed_start_time > FULL_SPEED_DURATION_LIMIT)) {
     setForwardSpeed(SustainedSpeed);
   }
 
-  if (sensor_values[0] < QTR_THRESHOLD)
-  {
+  if (sensor_values[0] < QTR_THRESHOLD) {
     #ifdef LOG_SERIAL
     Serial.print("Left Sensor Line Detected");
     Serial.println();
@@ -135,8 +133,7 @@ void loop()
     turn(RIGHT, true);
     #endif
   }
-  else if (sensor_values[NUM_SENSORS - 1] < QTR_THRESHOLD)
-  {
+  else if (sensor_values[NUM_SENSORS - 1] < QTR_THRESHOLD) {
     #ifdef LOG_SERIAL
     Serial.print("Right Sensor Line Detected");
     Serial.println();
@@ -145,12 +142,13 @@ void loop()
     turn(LEFT, true);
     #endif
   }
-  else  // otherwise, go straight
-  {
+  else {  // otherwise, go straight
     int speed = getForwardSpeed();
 
-    if (check_for_contact()) on_contact_made();
+    if (check_for_contact()) 
+      on_contact_made();
     
+    // if the contact time is 
     if(millis() - contactTime >= 4000 && displayed != true){
      display.clear();
      display.print("Driving");
