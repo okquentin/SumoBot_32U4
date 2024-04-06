@@ -54,10 +54,10 @@ extern unsigned int sensor_values[NUM_SENSORS];
 // these might need to be tuned for different motor types
 #define REVERSE_SPEED     200 // 0 is stopped, 400 is full speed
 #define TURN_SPEED        200
-#define SEARCH_SPEED      200
-#define SUSTAINED_SPEED   400 // switches to SUSTAINED_SPEED from FULL_SPEED after FULL_SPEED_DURATION_LIMIT ms
+#define SEARCH_SPEED      300
+#define SUSTAINED_SPEED   400 // NOT USED: switches to SUSTAINED_SPEED from FULL_SPEED after FULL_SPEED_DURATION_LIMIT ms
 #define FULL_SPEED        400
-#define PULSE_SPEED       350
+#define PULSE_SPEED       200
 #define STOP_DURATION     100 // ms
 #define REVERSE_DURATION  200 // ms
 #define TURN_DURATION     300 // ms
@@ -114,4 +114,5 @@ void on_contact_made();
 // reset forward speed
 void on_contact_lost();
 
+void pulseMotors();
 #endif

@@ -139,7 +139,7 @@ void on_contact_lost() {
 
 void pulseMotors() {
   if (contactTime >= 8000) {
-    if (contactTime % 10000 >= 5000 && contactTime % 10000 <= 9999)
+    if (contactTime % 100 >= 50 && contactTime % 100 <= 99)
       motors.setSpeeds(PULSE_SPEED, PULSE_SPEED);
     else
       motors.setSpeeds(FULL_SPEED, FULL_SPEED);    

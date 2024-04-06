@@ -69,7 +69,7 @@ void loop() {
     // when the robot makes contact with another robot
     if (check_for_contact()) {
       on_contact_made();
-      
+      pulseMotors();
     }
     else
       motors.setSpeeds(speed, speed);
