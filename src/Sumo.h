@@ -49,10 +49,10 @@ unsigned int sensor_values[NUM_SENSORS];
 #define QTR_THRESHOLD  250 // microseconds
 
 // these might need to be tuned for different motor types
-#define REVERSE_SPEED     200 // 0 is stopped, 400 is full speed
+#define REVERSE_SPEED     100 // 0 is stopped, 400 is full speed
 #define TURN_SPEED        200
 #define SEARCH_SPEED      200
-#define SUSTAINED_SPEED   400 // switches to SUSTAINED_SPEED from FULL_SPEED after FULL_SPEED_DURATION_LIMIT ms
+#define SUSTAINED_SPEED   200 // switches to SUSTAINED_SPEED from FULL_SPEED after FULL_SPEED_DURATION_LIMIT ms
 #define FULL_SPEED        400
 #define STOP_DURATION     100 // ms
 #define REVERSE_DURATION  200 // ms

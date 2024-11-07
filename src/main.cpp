@@ -3,8 +3,8 @@
 Accelerometer acc;
 boolean in_contact;  // set when accelerometer detects contact with opposing robot
 
-// Zumo32U4LCD display;
-Zumo32U4OLED display;
+Zumo32U4LCD display;
+// Zumo32U4OLED display;
 Zumo32U4ButtonA button;
 Zumo32U4LineSensors sensors;
 // Motor Settings
@@ -117,9 +117,9 @@ void loop() {
   acc.readAcceleration(loop_start_time);
   sensors.read(sensor_values);
 
-  if ((_forwardSpeed == FullSpeed) && (loop_start_time - full_speed_start_time > FULL_SPEED_DURATION_LIMIT)) {
-    setForwardSpeed(SustainedSpeed);
-  }
+  // if ((_forwardSpeed == FullSpeed) && (loop_start_time - full_speed_start_time > FULL_SPEED_DURATION_LIMIT)) {
+  //   setForwardSpeed(SustainedSpeed);
+  // }
 
   if (sensor_values[0] < QTR_THRESHOLD) {
     #ifdef LOG_SERIAL
@@ -233,6 +233,9 @@ void on_contact_lost() {
   in_contact = false;
   setForwardSpeed(SustainedSpeed);
   ledRed(0);
+  display.clear();
+  display.print("Driving");
+  displayed = true;
 }
 
 
